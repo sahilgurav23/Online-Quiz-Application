@@ -1,0 +1,270 @@
+@baseUrl = http://localhost:5079
+
+### ========================================
+### STEP 1: Create Users
+### ========================================
+
+### Create User 1
+POST {{baseUrl}}/api/users
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "email": "alice@example.com"
+}
+
+### Create User 2
+POST {{baseUrl}}/api/users
+Content-Type: application/json
+
+{
+  "username": "bob",
+  "email": "bob@example.com"
+}
+
+### Get All Users (to see the IDs)
+GET {{baseUrl}}/api/users
+
+### ========================================
+### STEP 2: Create a Quiz
+### ========================================
+
+### Create a Programming Quiz
+POST {{baseUrl}}/api/quizzes
+Content-Type: application/json
+
+{
+  "title": "Programming Basics Quiz",
+  "description": "Test your programming knowledge",
+  "questions": [
+    {
+      "questionText": "What does HTML stand for?",
+      "options": [
+        {
+          "optionText": "Hyper Text Markup Language",
+          "isCorrect": true
+        },
+        {
+          "optionText": "High Tech Modern Language",
+          "isCorrect": false
+        },
+        {
+          "optionText": "Home Tool Markup Language",
+          "isCorrect": false
+        },
+        {
+          "optionText": "Hyperlinks and Text Markup Language",
+          "isCorrect": false
+        }
+      ]
+    },
+    {
+      "questionText": "Which programming language is known as the 'language of the web'?",
+      "options": [
+        {
+          "optionText": "Python",
+          "isCorrect": false
+        },
+        {
+          "optionText": "JavaScript",
+          "isCorrect": true
+        },
+        {
+          "optionText": "Java",
+          "isCorrect": false
+        },
+        {
+          "optionText": "C++",
+          "isCorrect": false
+        }
+      ]
+    },
+    {
+      "questionText": "What is the result of 10 / 2 in most programming languages?",
+      "options": [
+        {
+          "optionText": "5",
+          "isCorrect": true
+        },
+        {
+          "optionText": "2",
+          "isCorrect": false
+        },
+        {
+          "optionText": "10",
+          "isCorrect": false
+        },
+        {
+          "optionText": "Error",
+          "isCorrect": false
+        }
+      ]
+    }
+  ]
+}
+
+### Create a Math Quiz
+POST {{baseUrl}}/api/quizzes
+Content-Type: application/json
+
+{
+  "title": "Basic Math Quiz",
+  "description": "Simple math questions",
+  "questions": [
+    {
+      "questionText": "What is 5 + 3?",
+      "options": [
+        { "optionText": "7", "isCorrect": false },
+        { "optionText": "8", "isCorrect": true },
+        { "optionText": "9", "isCorrect": false }
+      ]
+    },
+    {
+      "questionText": "What is 12 - 4?",
+      "options": [
+        { "optionText": "6", "isCorrect": false },
+        { "optionText": "7", "isCorrect": false },
+        { "optionText": "8", "isCorrect": true }
+      ]
+    }
+  ]
+}
+
+### Get All Quizzes (to see quiz IDs and question IDs)
+GET {{baseUrl}}/api/quizzes
+
+### Get Specific Quiz by ID
+GET {{baseUrl}}/api/quizzes/1
+
+### ========================================
+### STEP 3: Submit Quiz Answers
+### ========================================
+
+### Submit Quiz 1 - User 1 (All Correct Answers)
+# Note: Replace questionId and optionId with actual IDs from GET /api/quizzes response
+POST {{baseUrl}}/api/quizsubmissions
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "quizId": 1,
+  "answers": [
+    {
+      "questionId": 1,
+      "optionId": 1
+    },
+    {
+      "questionId": 2,
+      "optionId": 6
+    },
+    {
+      "questionId": 3,
+      "optionId": 9
+    }
+  ]
+}
+
+### Submit Quiz 1 - User 2 (Mixed Answers)
+POST {{baseUrl}}/api/quizsubmissions
+Content-Type: application/json
+
+{
+  "userId": 2,
+  "quizId": 1,
+  "answers": [
+    {
+      "questionId": 1,
+      "optionId": 2
+    },
+    {
+      "questionId": 2,
+      "optionId": 6
+    },
+    {
+      "questionId": 3,
+      "optionId": 10
+    }
+  ]
+}
+
+### ========================================
+### STEP 4: View Results
+### ========================================
+
+### Get Quiz Result for User 1, Quiz 1
+GET {{baseUrl}}/api/quizsubmissions/user/1/quiz/1
+
+### Get Quiz Result for User 2, Quiz 1
+GET {{baseUrl}}/api/quizsubmissions/user/2/quiz/1
+
+### Get All Quiz Results for User 1
+GET {{baseUrl}}/api/quizsubmissions/user/1
+
+### Get All Quiz Results for User 2
+GET {{baseUrl}}/api/quizsubmissions/user/2
+
+### ========================================
+### STEP 5: Update Operations
+### ========================================
+
+### Update User
+PUT {{baseUrl}}/api/users/1
+Content-Type: application/json
+
+{
+  "username": "alice_updated",
+  "email": "alice.new@example.com"
+}
+
+### Update Quiz
+PUT {{baseUrl}}/api/quizzes/1
+Content-Type: application/json
+
+{
+  "title": "Updated Programming Quiz Title",
+  "description": "Updated description for the quiz"
+}
+
+### ========================================
+### STEP 6: Delete Operations (Use with caution!)
+### ========================================
+
+### Delete a Quiz Submission
+DELETE {{baseUrl}}/api/quizsubmissions/user/1/quiz/1
+
+### Delete a User
+# DELETE {{baseUrl}}/api/users/2
+
+### Delete a Quiz
+# DELETE {{baseUrl}}/api/quizzes/2
+
+### ========================================
+### Additional Test Cases
+### ========================================
+
+### Test: Create User with Duplicate Username (Should Fail)
+POST {{baseUrl}}/api/users
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "email": "another@example.com"
+}
+
+### Test: Get Non-Existent User (Should Return 404)
+GET {{baseUrl}}/api/users/999
+
+### Test: Submit Quiz with Invalid User ID (Should Fail)
+POST {{baseUrl}}/api/quizsubmissions
+Content-Type: application/json
+
+{
+  "userId": 999,
+  "quizId": 1,
+  "answers": [
+    {
+      "questionId": 1,
+      "optionId": 1
+    }
+  ]
+}

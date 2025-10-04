@@ -1,0 +1,37 @@
+@Quiz_Api_HostAddress = http://localhost:5079
+@ApiKey = YRwMhWyVsN4cx8CF0CyEfetDrQ2Ag0xuumo4RaOoEiI=
+
+### ========================================
+### Fetch all quizzes (questions with options, NO correct answers shown)
+### ========================================
+GET {{Quiz_Api_HostAddress}}/api/quizzes
+Accept: application/json
+X-API-Key: {{ApiKey}}
+
+###
+
+### ========================================
+### Fetch specific quiz by ID (questions with options, NO correct answers shown)
+### ========================================
+GET {{Quiz_Api_HostAddress}}/api/quizzes/1
+Accept: application/json
+X-API-Key: {{ApiKey}}
+
+###
+
+### ========================================
+### Fetch quiz with CORRECT ANSWERS (for checking/grading)
+### ========================================
+GET {{Quiz_Api_HostAddress}}/api/quizzes/1/answers
+Accept: application/json
+X-API-Key: {{ApiKey}}
+
+###
+
+### ========================================
+### Test: Request WITHOUT API Key (Should return 401 Unauthorized)
+### ========================================
+GET {{Quiz_Api_HostAddress}}/api/quizzes
+Accept: application/json
+
+###
