@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
-/* Tailwind v4 dark mode variant */
+/* Tailwind v4 dark variant mapping (VS Code may warn about @variant; safe to ignore) */
 @variant dark (&:where(.dark, .dark *));
 
+/* Light mode (default) */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -18,20 +19,27 @@
   --ring: #2563eb;
 }
 
+/* Dark mode (attractive, high-contrast palette) */
 :root.dark,
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --card: #1f2937;
-  --card-foreground: #ededed;
-  --primary: #3b82f6;
+  --background: #0b1220;            /* deep navy */
+  --foreground: #e6e8ee;            /* soft light gray */
+  --card: #0f172a;                  /* slate-900 */
+  --card-foreground: #e6e8ee;
+  --primary: #8b5cf6;               /* violet-500 */
   --primary-foreground: #ffffff;
-  --secondary: #374151;
-  --secondary-foreground: #ededed;
-  --accent: #374151;
-  --accent-foreground: #ededed;
-  --border: #374151;
-  --ring: #3b82f6;
+  --secondary: #111827;             /* gray-900 */
+  --secondary-foreground: #e6e8ee;
+  --accent: #1f2937;                /* slate-800 */
+  --accent-foreground: #e6e8ee;
+  --border: #243041;                /* dark border */
+  --ring: #8b5cf6;                  /* match primary */
+}
+
+/* Ensure dark mode applies to all elements */
+.dark,
+.dark * {
+  color-scheme: dark;
 }
 
 @layer base {
@@ -54,4 +62,43 @@ body {
   transition-property: background-color, border-color, color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 200ms;
+}
+
+/* Optional: Polished scrollbars for both themes */
+body::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+body::-webkit-scrollbar-track {
+  background: var(--background);
+}
+body::-webkit-scrollbar-thumb {
+  background: #c7c9d1;
+  border-radius: 9999px;
+}
+.dark body::-webkit-scrollbar-thumb {
+  background: #334155; /* slate-700 */
+}
+
+/* Prevent copying quiz content */
+.no-copy {
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* IE10+/Edge */
+  user-select: none; /* Standard */
+  -webkit-touch-callout: none; /* iOS Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -webkit-user-drag: none; /* Safari drag */
+  -khtml-user-drag: none; /* Konqueror drag */
+  -moz-user-drag: none; /* Firefox drag */
+  -o-user-select: none; /* Opera */
+  cursor: default; /* Change cursor to indicate non-selectable */
+}
+
+/* Additional protection for Edge */
+.no-copy * {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }

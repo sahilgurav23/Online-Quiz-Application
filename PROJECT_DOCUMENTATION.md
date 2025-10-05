@@ -48,12 +48,13 @@
 
 2. **Quiz Taking Interface**
    - Interactive question navigation
-   - **10-minute countdown timer** with auto-submit
+   - **Countdown timer** with auto-submit
    - Color-coded timer (blue → yellow → red as time runs out)
    - Progress bar showing completion status
    - Visual question navigator (grid view)
    - Answer selection with visual feedback
    - Automatic quiz submission when time expires
+   - **Anti-copy protection** - Questions and options cannot be copied
 
 3. **Results & Analytics**
    - Percentage-based scoring with emoji feedback
@@ -695,6 +696,90 @@ const getTimerColor = () => {
 3. Wait until < 1 minute (timer turns red)
 4. Expected: Color changes work correctly
 ```
+
+### Anti-Copy Protection
+
+**Implementation:**
+Quiz questions and options are protected from copying to prevent cheating and content theft.
+
+1. **Text Selection Disabled**
+   - Users cannot select quiz text with mouse
+   - Drag-to-select is blocked
+   - Works across all browsers (Chrome, Firefox, Safari, Edge)
+
+2. **Right-Click Context Menu Disabled**
+   - Right-click is blocked on quiz content
+   - Prevents "Copy" option from appearing
+   - Context menu disabled only on quiz area
+
+3. **Keyboard Shortcuts Blocked**
+   - **Ctrl+C** (Copy) - Blocked
+   - **Ctrl+A** (Select All) - Blocked
+   - **Ctrl+X** (Cut) - Blocked
+   - **Cmd+C/A/X** on Mac - Also blocked
+
+4. **Code Implementation**:
+
+**CSS** (`globals.css`):
+```css
+.no-copy {
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* IE10+/Edge */
+  user-select: none; /* Standard */
+  -webkit-touch-callout: none; /* iOS Safari */
+}
+```
+
+**React** (`QuizInterface.tsx`):
+```typescript
+// Prevent copy shortcuts
+const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'a' || e.key === 'x')) {
+        e.preventDefault();
+    }
+};
+
+// Apply to quiz container
+<div className="no-copy" 
+     onContextMenu={(e) => e.preventDefault()} 
+     onKeyDown={handleKeyDown}>
+  {/* Quiz content */}
+</div>
+```
+
+**What's Protected:**
+- ✅ Question text
+- ✅ Answer options
+- ✅ Question numbers
+- ✅ All quiz content
+
+**What's NOT Protected:**
+- ❌ Timer (users can see time)
+- ❌ Navigation buttons (users can click)
+- ❌ Theme toggle (users can switch themes)
+
+**Testing Anti-Copy:**
+```bash
+# Test Case 1: Mouse selection
+1. Start a quiz
+2. Try to select question text with mouse
+3. Expected: ✅ Text cannot be selected
+
+# Test Case 2: Right-click
+1. Right-click on question or option
+2. Expected: ✅ Context menu doesn't appear
+
+# Test Case 3: Ctrl+C
+1. Try to press Ctrl+C on quiz content
+2. Expected: ✅ Nothing copied to clipboard
+
+# Test Case 4: Ctrl+A
+1. Try to press Ctrl+A to select all
+2. Expected: ✅ Quiz content not selected
+```
+
+**Note**: While this prevents casual copying, determined users can still use browser DevTools or screenshots. This is a deterrent, not absolute protection.
 
 ### Question Skip & Navigation Functionality
 

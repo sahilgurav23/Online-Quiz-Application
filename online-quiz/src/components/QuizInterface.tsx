@@ -33,26 +33,27 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
     const timer = setInterval(() => {
       setTimeElapsed((prev) => {
         const newTime = prev + 1;
-        // Auto-submit when time is up
-        if (newTime >= TIME_LIMIT) {
-          clearInterval(timer);
-          // Store results and navigate
-          const resultsData = {
-            quizId: quiz.id,
-            quizTitle: quiz.title,
-            userAnswers: userAnswers,
-            timeTaken: TIME_LIMIT,
-          };
-          sessionStorage.setItem('quizResults', JSON.stringify(resultsData));
-          router.push(`/quiz/${quiz.id}/results`);
-          return TIME_LIMIT;
-        }
         return newTime;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isStarted, userAnswers, quiz.id, quiz.title, router]);
+  }, [isStarted]);
+
+  // Separate effect to handle auto-submit when time is up
+  useEffect(() => {
+    if (isStarted && timeElapsed >= TIME_LIMIT) {
+      // Store results and navigate
+      const resultsData = {
+        quizId: quiz.id,
+        quizTitle: quiz.title,
+        userAnswers: userAnswers,
+        timeTaken: TIME_LIMIT,
+      };
+      sessionStorage.setItem('quizResults', JSON.stringify(resultsData));
+      router.push(`/quiz/${quiz.id}/results`);
+    }
+  }, [timeElapsed, isStarted, TIME_LIMIT, userAnswers, quiz.id, quiz.title, router]);
 
   // Check if current question has been answered
   useEffect(() => {
@@ -64,6 +65,22 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
 
   const handleStartQuiz = () => {
     setIsStarted(true);
+  };
+
+  // Prevent copy shortcuts (Ctrl+C, Ctrl+A, etc.)
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Block copy, cut, select all
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'a' || e.key === 'x' || e.key === 'C' || e.key === 'A' || e.key === 'X')) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+    // Block F12 and Ctrl+Shift+I (DevTools)
+    if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'I')) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
   };
 
   const handleOptionSelect = (optionId: number) => {
@@ -215,7 +232,7 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
 
       {/* Question Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700 no-copy" onContextMenu={(e) => e.preventDefault()} onKeyDown={handleKeyDown}>
           {/* Question */}
           <div className="mb-8">
             <div className="flex items-start gap-4">
