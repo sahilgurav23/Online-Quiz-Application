@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { quizApi } from '@/lib/api';
 import { QuizDto, UserAnswer } from '@/types/quiz';
+import ThemeToggle from '@/components/ThemeToggle';
 
 interface StoredResults {
   quizId: number;
@@ -140,9 +141,12 @@ export default function ResultsPage() {
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Quiz Results
-          </h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Quiz Results
+            </h1>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
@@ -192,15 +196,15 @@ export default function ResultsPage() {
           <div className="flex gap-4 justify-center">
             <Link
               href={`/quiz/${quizId}`}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors shadow-md hover:shadow-lg"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-xl transform hover:scale-105"
             >
-              Retake Quiz
+              🔄 Retake Quiz
             </Link>
             <Link
               href="/"
-              className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+              className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold py-3 px-6 rounded-lg transition-all hover:shadow-lg"
             >
-              Back to Home
+              🏠 Back to Home
             </Link>
           </div>
         </div>
