@@ -20,17 +20,39 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === quiz.questions.length - 1;
   const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
+  
+  // 5 minutes in seconds
+  const TIME_LIMIT = 60;
+  const timeRemaining = TIME_LIMIT - timeElapsed;
+  const isTimeUp = timeRemaining <= 0;
 
-  // Timer effect
+  // Timer effect with auto-submit
   useEffect(() => {
     if (!isStarted) return;
 
     const timer = setInterval(() => {
-      setTimeElapsed((prev) => prev + 1);
+      setTimeElapsed((prev) => {
+        const newTime = prev + 1;
+        // Auto-submit when time is up
+        if (newTime >= TIME_LIMIT) {
+          clearInterval(timer);
+          // Store results and navigate
+          const resultsData = {
+            quizId: quiz.id,
+            quizTitle: quiz.title,
+            userAnswers: userAnswers,
+            timeTaken: TIME_LIMIT,
+          };
+          sessionStorage.setItem('quizResults', JSON.stringify(resultsData));
+          router.push(`/quiz/${quiz.id}/results`);
+          return TIME_LIMIT;
+        }
+        return newTime;
+      });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isStarted]);
+  }, [isStarted, userAnswers, quiz.id, quiz.title, router]);
 
   // Check if current question has been answered
   useEffect(() => {
@@ -46,30 +68,30 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
 
   const handleOptionSelect = (optionId: number) => {
     setSelectedOption(optionId);
-  };
-
-  const handleNext = () => {
-    if (selectedOption === null) return;
-
-    // Save answer
+    
+    // Save answer immediately when option is selected
     const newAnswer: UserAnswer = {
       questionId: currentQuestion.id,
-      selectedOptionId: selectedOption,
+      selectedOptionId: optionId,
     };
 
     setUserAnswers((prev) => {
+      // Remove any existing answer for this question
       const filtered = prev.filter((a) => a.questionId !== currentQuestion.id);
+      // Add the new answer
       return [...filtered, newAnswer];
     });
+  };
 
+  const handleNext = () => {
+    // Check if this is the last question and submit
     if (isLastQuestion) {
-      // Submit quiz
-      handleSubmit([...userAnswers.filter((a) => a.questionId !== currentQuestion.id), newAnswer]);
-    } else {
-      // Move to next question
-      setCurrentQuestionIndex((prev) => prev + 1);
-      setSelectedOption(null);
+      handleSubmit(userAnswers);
+      return;
     }
+
+    // Move to next question
+    setCurrentQuestionIndex((prev) => prev + 1);
   };
 
   const handlePrevious = () => {
@@ -94,6 +116,12 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getTimerColor = () => {
+    if (timeRemaining <= 60) return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200';
+    if (timeRemaining <= 180) return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200';
+    return 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200';
   };
 
   if (!isStarted) {
@@ -124,10 +152,10 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
                 </div>
                 <div>
                   <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                    ⏱️
+                    1:00
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Timed
+                    Time Limit
                   </div>
                 </div>
               </div>
@@ -167,8 +195,9 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-4 py-2 rounded-lg font-mono font-semibold">
-                ⏱️ {formatTime(timeElapsed)}
+              <div className={`${getTimerColor()} px-4 py-2 rounded-lg font-mono font-semibold transition-colors`}>
+                ⏱️ {formatTime(timeRemaining)}
+                <span className="text-xs ml-2">remaining</span>
               </div>
               <ThemeToggle />
             </div>
@@ -247,8 +276,7 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
 
             <button
               onClick={handleNext}
-              disabled={selectedOption === null}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md hover:shadow-lg"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
             >
               {isLastQuestion ? 'Submit Quiz' : 'Next →'}
             </button>
