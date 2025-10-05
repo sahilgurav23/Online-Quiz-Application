@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { QuizDto, UserAnswer } from '@/types/quiz';
 import ThemeToggle from './ThemeToggle';
@@ -16,6 +17,9 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isStarted, setIsStarted] = useState(false);
+  // Anti-screenshot states
+  const [isObscured, setIsObscured] = useState(false);
+  const [showShotWarning, setShowShotWarning] = useState(false);
 
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === quiz.questions.length - 1;
@@ -55,6 +59,43 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
     }
   }, [timeElapsed, isStarted, TIME_LIMIT, userAnswers, quiz.id, quiz.title, router]);
 
+  // Anti-screenshot: blur content when tab loses visibility or window loses focus
+  useEffect(() => {
+    const onVisibility = () => setIsObscured(document.hidden);
+    const onBlur = () => setIsObscured(true);
+    const onFocus = () => setIsObscured(false);
+
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('blur', onBlur);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('blur', onBlur);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, []);
+
+  // Anti-screenshot: attempt to block PrintScreen by clearing clipboard and show warning
+  useEffect(() => {
+    const onKeyDown = async (e: KeyboardEvent) => {
+      const isPrintScreen = e.key === 'PrintScreen' || e.key === 'Snapshot';
+      if (isPrintScreen) {
+        e.preventDefault();
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText('');
+          }
+        } catch (_) {
+          // ignore
+        }
+        setShowShotWarning(true);
+        setTimeout(() => setShowShotWarning(false), 2000);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   // Check if current question has been answered
   useEffect(() => {
     const existingAnswer = userAnswers.find(
@@ -68,7 +109,7 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
   };
 
   // Prevent copy shortcuts (Ctrl+C, Ctrl+A, etc.)
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: ReactKeyboardEvent) => {
     // Block copy, cut, select all
     if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'a' || e.key === 'x' || e.key === 'C' || e.key === 'A' || e.key === 'X')) {
       e.preventDefault();
@@ -230,9 +271,24 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
         </div>
       </header>
 
+      {/* Anti-screenshot overlays */}
+      {isObscured && (
+        <div className="focus-overlay">
+          Please return to the quiz window. Screen capture/recording is discouraged.
+        </div>
+      )}
+      {showShotWarning && !isObscured && (
+        <div className="focus-overlay">Screenshots are not allowed</div>
+      )}
+
       {/* Question Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700 no-copy" onContextMenu={(e) => e.preventDefault()} onKeyDown={handleKeyDown}>
+        <div
+          className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700 no-copy ${isObscured ? 'exam-blur' : ''}`}
+          onContextMenu={(e) => e.preventDefault()}
+          onKeyDown={handleKeyDown}
+          tabIndex={0}
+        >
           {/* Question */}
           <div className="mb-8">
             <div className="flex items-start gap-4">
