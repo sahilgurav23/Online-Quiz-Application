@@ -555,13 +555,13 @@ GET /api/quizzes/{id}/answers
 ### Sample Data
 The application comes pre-loaded with 3 quizzes:
 
-1. **General Knowledge Quiz** (10 questions, 10 minutes)
+1. **General Knowledge Quiz** (10 questions, 2 minutes)
    - Geography, Science, History, Nature, Art topics
 
-2. **Programming Basics** (10 questions, 10 minutes)
+2. **Programming Basics** (10 questions, 2 minutes)
    - HTML, CSS, JavaScript, Python, SQL, HTTP fundamentals
 
-3. **Math Quiz** (10 questions, 10 minutes)
+3. **Math Quiz** (10 questions, 2 minutes)
    - Basic arithmetic, multiplication, division, percentages
 
 ---
@@ -622,17 +622,16 @@ The application comes pre-loaded with 3 quizzes:
 3. **Caching**: Can add Redis for performance
 4. **Deployment**: Ready for cloud deployment (Azure, AWS, Vercel)
 
-### 10-Minute Timer with Auto-Submit
+### 2-Minute Timer with Auto-Submit
 
 **Implementation:**
-Each quiz has a 10-minute time limit with automatic submission when time expires.
+Each quiz has a 2-minute time limit with automatic submission when time expires.
 
 1. **Timer Display**
    - Countdown timer showing remaining time (MM:SS format)
    - Color-coded visual feedback:
-     - **Blue**: More than 3 minutes remaining
-     - **Yellow**: 1-3 minutes remaining (warning)
-     - **Red**: Less than 1 minute remaining (critical)
+     - **Yellow**: More than 1 minute remaining (61-120 seconds)
+     - **Red**: 1 minute or less remaining (≤ 60 seconds)
 
 2. **Auto-Submit Feature**
    - Quiz automatically submits when timer reaches 00:00
@@ -641,14 +640,14 @@ Each quiz has a 10-minute time limit with automatic submission when time expires
    - User is redirected to results page
 
 3. **Start Screen**
-   - Shows "10:00" time limit before starting
+   - Shows "2:00" time limit before starting
    - Timer starts when user clicks "Start Quiz"
    - No time pressure until quiz begins
 
 4. **Code Implementation** (`QuizInterface.tsx`):
 ```typescript
 // Line 25: Time limit constant
-const TIME_LIMIT = 600; // 10 minutes in seconds
+const TIME_LIMIT = 120; // 2 minutes in seconds
 const timeRemaining = TIME_LIMIT - timeElapsed;
 
 // Line 30-47: Timer with auto-submit
@@ -668,11 +667,11 @@ useEffect(() => {
     return () => clearInterval(timer);
 }, [isStarted, userAnswers]);
 
-// Line 122-126: Color coding logic
+// Line 252-256: Color coding logic
 const getTimerColor = () => {
-    if (timeRemaining <= 60) return 'red'; // < 1 min
-    if (timeRemaining <= 180) return 'yellow'; // < 3 min
-    return 'blue'; // > 3 min
+    if (timeRemaining <= 60) return 'red'; // ≤ 1 min
+    if (timeRemaining <= 180) return 'yellow'; // ≤ 3 min (effectively 61-120s for 2min timer)
+    return 'blue'; // > 3 min (never reached with 2min timer)
 };
 ```
 
@@ -680,7 +679,7 @@ const getTimerColor = () => {
 ```bash
 # Test Case 1: Normal completion
 1. Start a quiz
-2. Answer questions within 10 minutes
+2. Answer questions within 2 minutes
 3. Submit manually
 4. Expected: Normal submission, time recorded
 
@@ -691,10 +690,9 @@ const getTimerColor = () => {
 4. Expected: Quiz auto-submits, redirects to results
 
 # Test Case 3: Color changes
-1. Start a quiz
-2. Wait until < 3 minutes (timer turns yellow)
-3. Wait until < 1 minute (timer turns red)
-4. Expected: Color changes work correctly
+1. Start a quiz (timer starts yellow at 2:00)
+2. Wait until < 1 minute (timer turns red)
+3. Expected: Color changes work correctly
 ```
 
 ### Anti-Copy Protection

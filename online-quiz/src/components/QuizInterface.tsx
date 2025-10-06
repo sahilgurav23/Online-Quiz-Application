@@ -41,8 +41,8 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
   const isLastQuestion = currentQuestionIndex === shuffledQuestions.length - 1;
   const progress = ((currentQuestionIndex + 1) / shuffledQuestions.length) * 100;
   
-  // 5 minutes in seconds
-  const TIME_LIMIT = 60;
+  // 2 minutes in seconds
+  const TIME_LIMIT = 120;
   const MAX_VIOLATIONS = 2; // number of allowed focus losses before auto-submit
   const timeRemaining = TIME_LIMIT - timeElapsed;
   const isTimeUp = timeRemaining <= 0;
@@ -283,7 +283,7 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
                 </div>
                 <div>
                   <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                    1:00
+                    2:00
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     Time Limit

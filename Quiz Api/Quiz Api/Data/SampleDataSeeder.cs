@@ -18,7 +18,7 @@ public static class SampleDataSeeder
             new Quiz
             {
                 Title = "General Knowledge Quiz",
-                Description = "Test your general knowledge with these questions (5 minutes)",
+                Description = "Test your general knowledge with these questions (2 minutes)",
                 Questions = new List<Question>
                 {
                     new Question
@@ -136,7 +136,7 @@ public static class SampleDataSeeder
             new Quiz
             {
                 Title = "Programming Basics",
-                Description = "Test your programming knowledge (5 minutes)",
+                Description = "Test your programming knowledge (2 minutes)",
                 Questions = new List<Question>
                 {
                     new Question
@@ -254,7 +254,7 @@ public static class SampleDataSeeder
             new Quiz
             {
                 Title = "Math Quiz",
-                Description = "Simple math questions (5 minutes)",
+                Description = "Simple math questions (2 minutes)",
                 Questions = new List<Question>
                 {
                     new Question
