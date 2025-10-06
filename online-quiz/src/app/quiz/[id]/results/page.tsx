@@ -45,8 +45,21 @@ export default function ResultsPage() {
 
         setResults(parsedResults);
 
-        // Fetch quiz with correct answers
-        const quizWithAnswers = await quizApi.getQuizWithAnswers(quizId);
+        // Fetch quiz with correct answers (with retry for transient failures)
+        const retryGetQuizWithAnswers = async (retries = 3, delayMs = 500): Promise<QuizDto> => {
+          let lastErr: unknown;
+          for (let i = 0; i < retries; i++) {
+            try {
+              return await quizApi.getQuizWithAnswers(quizId);
+            } catch (err) {
+              lastErr = err;
+              await new Promise((res) => setTimeout(res, delayMs));
+            }
+          }
+          throw lastErr instanceof Error ? lastErr : new Error('Failed to fetch quiz answers');
+        };
+
+        const quizWithAnswers = await retryGetQuizWithAnswers();
         setQuiz(quizWithAnswers);
         setLoading(false);
       } catch (err) {

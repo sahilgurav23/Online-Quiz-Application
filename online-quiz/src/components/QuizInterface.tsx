@@ -1,10 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { QuizDto, UserAnswer } from '@/types/quiz';
 import ThemeToggle from './ThemeToggle';
+
+// Fisher–Yates shuffle
+function shuffleArray<T>(array: T[]): T[] {
+  const a = array.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 interface QuizInterfaceProps {
   quiz: QuizDto;
@@ -20,13 +30,20 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
   // Anti-screenshot states
   const [isObscured, setIsObscured] = useState(false);
   const [showShotWarning, setShowShotWarning] = useState(false);
+  const [violations, setViolations] = useState(0);
+  const violationLockRef = useRef(false);
+  const [autoSubmitting, setAutoSubmitting] = useState(false);
 
-  const currentQuestion = quiz.questions[currentQuestionIndex];
-  const isLastQuestion = currentQuestionIndex === quiz.questions.length - 1;
-  const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
+  // Shuffled questions for this session (options also shuffled)
+  const [shuffledQuestions, setShuffledQuestions] = useState(quiz.questions);
+
+  const currentQuestion = shuffledQuestions[currentQuestionIndex];
+  const isLastQuestion = currentQuestionIndex === shuffledQuestions.length - 1;
+  const progress = ((currentQuestionIndex + 1) / shuffledQuestions.length) * 100;
   
   // 5 minutes in seconds
   const TIME_LIMIT = 60;
+  const MAX_VIOLATIONS = 2; // number of allowed focus losses before auto-submit
   const timeRemaining = TIME_LIMIT - timeElapsed;
   const isTimeUp = timeRemaining <= 0;
 
@@ -44,6 +61,16 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
     return () => clearInterval(timer);
   }, [isStarted]);
 
+  // Prepare shuffled questions when quiz loads
+  useEffect(() => {
+    const shuffled = shuffleArray(quiz.questions).map((q) => ({
+      ...q,
+      options: shuffleArray(q.options),
+    }));
+    setShuffledQuestions(shuffled);
+    setCurrentQuestionIndex(0);
+  }, [quiz.id]);
+
   // Separate effect to handle auto-submit when time is up
   useEffect(() => {
     if (isStarted && timeElapsed >= TIME_LIMIT) {
@@ -59,10 +86,31 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
     }
   }, [timeElapsed, isStarted, TIME_LIMIT, userAnswers, quiz.id, quiz.title, router]);
 
-  // Anti-screenshot: blur content when tab loses visibility or window loses focus
+  // Register a single violation per focus-loss burst (debounced)
+  const registerViolation = useCallback(() => {
+    if (!isStarted) return;
+    if (violationLockRef.current) return;
+    setViolations((v) => v + 1);
+    violationLockRef.current = true;
+    // Unlock after short delay to avoid double counting from blur + visibilitychange
+    setTimeout(() => {
+      violationLockRef.current = false;
+    }, 1200);
+  }, [isStarted]);
+
+  // Anti-screenshot: blur content when tab/window loses focus and count violations (debounced)
   useEffect(() => {
-    const onVisibility = () => setIsObscured(document.hidden);
-    const onBlur = () => setIsObscured(true);
+    if (!isStarted) return;
+
+    const onVisibility = () => {
+      const hidden = document.hidden;
+      setIsObscured(hidden);
+      if (hidden) registerViolation();
+    };
+    const onBlur = () => {
+      setIsObscured(true);
+      registerViolation();
+    };
     const onFocus = () => setIsObscured(false);
 
     document.addEventListener('visibilitychange', onVisibility);
@@ -73,7 +121,23 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
       window.removeEventListener('blur', onBlur);
       window.removeEventListener('focus', onFocus);
     };
-  }, []);
+  }, [isStarted, registerViolation]);
+
+  // Auto-submit immediately when max attempts are reached
+  useEffect(() => {
+    if (!isStarted) return;
+    if (violations >= MAX_VIOLATIONS && !autoSubmitting) {
+      setAutoSubmitting(true);
+      const resultsData = {
+        quizId: quiz.id,
+        quizTitle: quiz.title,
+        userAnswers: userAnswers,
+        timeTaken: timeElapsed,
+      };
+      sessionStorage.setItem('quizResults', JSON.stringify(resultsData));
+      router.push(`/quiz/${quiz.id}/results`);
+    }
+  }, [violations, isStarted, autoSubmitting, quiz.id, quiz.title, router, userAnswers, timeElapsed]);
 
   // Anti-screenshot: attempt to block PrintScreen by clearing clipboard and show warning
   useEffect(() => {
@@ -104,8 +168,17 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
     setSelectedOption(existingAnswer?.selectedOptionId || null);
   }, [currentQuestionIndex, userAnswers, currentQuestion.id]);
 
-  const handleStartQuiz = () => {
+  const handleStartQuiz = async () => {
     setIsStarted(true);
+    // Try entering fullscreen for stricter focus
+    try {
+      const el: any = document.documentElement as any;
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+      else if (el.msRequestFullscreen) await el.msRequestFullscreen();
+    } catch (_) {
+      // Ignore if user blocks fullscreen
+    }
   };
 
   // Prevent copy shortcuts (Ctrl+C, Ctrl+A, etc.)
@@ -249,7 +322,7 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
                 {quiz.title}
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Question {currentQuestionIndex + 1} of {quiz.questions.length}
+                Question {currentQuestionIndex + 1} of {shuffledQuestions.length}
               </p>
             </div>
             <div className="flex items-center gap-4">
@@ -274,7 +347,14 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
       {/* Anti-screenshot overlays */}
       {isObscured && (
         <div className="focus-overlay">
-          Please return to the quiz window. Screen capture/recording is discouraged.
+          {autoSubmitting || violations >= MAX_VIOLATIONS
+            ? 'Max attempts reached. Submitting your quiz...'
+            : 'You left the quiz window. Please return to continue.'}
+          {!autoSubmitting && violations < MAX_VIOLATIONS && (
+            <div className="mt-2 text-sm opacity-90">
+              Attempt {Math.min(violations, MAX_VIOLATIONS)} of {MAX_VIOLATIONS}
+            </div>
+          )}
         </div>
       )}
       {showShotWarning && !isObscured && (
@@ -344,7 +424,7 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
             </button>
 
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              {userAnswers.length} of {quiz.questions.length} answered
+              {userAnswers.length} of {shuffledQuestions.length} answered
             </div>
 
             <button
@@ -362,7 +442,7 @@ export default function QuizInterface({ quiz }: QuizInterfaceProps) {
             Question Navigator
           </h3>
           <div className="flex flex-wrap gap-2">
-            {quiz.questions.map((question, index) => {
+            {shuffledQuestions.map((question, index) => {
               const isAnswered = userAnswers.some((a) => a.questionId === question.id);
               const isCurrent = index === currentQuestionIndex;
 
